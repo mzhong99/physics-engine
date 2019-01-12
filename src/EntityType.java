@@ -1,0 +1,3 @@
+public enum EntityType {
+	MOVABLE, COLLIDABLE, WEIGHTABLE, VIEWABLE;
+}
