@@ -11,11 +11,13 @@ public abstract class Entity {
 	public final long ID;
 	public final Set<EntityType> entityTypes;
 	public final Map<ComponentType, Object> components;
+	public final PhysicsEngine engine;
 
-	public Entity() {
-		ID = GLOBAL_ID++;
-		entityTypes = new HashSet<EntityType>();
-		components = new HashMap<ComponentType, Object>();
+	public Entity(PhysicsEngine engine) {
+		this.ID = GLOBAL_ID++;
+		this.entityTypes = new HashSet<EntityType>();
+		this.components = new HashMap<ComponentType, Object>();
+		this.engine = engine;
 	}
 
 	public int hashCode() {

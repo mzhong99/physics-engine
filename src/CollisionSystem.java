@@ -21,9 +21,19 @@ public class CollisionSystem extends GameSystem {
 			position.x = WORLD_WIDTH;
 		}	
 
+		if (position.x < 0) {
+			velocity.x *= -1;
+			position.x = 0;
+		}
+
 		if (position.y > WORLD_HEIGHT) {
 			velocity.y *= -1;
 			position.y = WORLD_HEIGHT;
+		}
+
+		if (position.y < 0) {
+			velocity.y *= -1;
+			position.y = 0;
 		}
 
 		entity.components.put(ComponentType.POSITION, position);

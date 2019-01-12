@@ -86,7 +86,8 @@ public class PhysicsEngine {
 				@Override
 				public void handle(ActionEvent event) {
 					
-					PointEntity entity = new PointEntity(
+					Entity entity = new PointEntity(
+						engineReference,
 						(long)(Math.random() * WORLD_WIDTH), 
 						(long)(Math.random() * WORLD_HEIGHT)
 					);
@@ -115,9 +116,6 @@ public class PhysicsEngine {
 					stopButton.setDisable(false);
 
 					WORLD_IS_RUNNING = true;
-					lastTime = System.nanoTime();
-
-					Platform.runLater(new UpdateWorldRunnable());
 				}
 			});
 		}
@@ -146,28 +144,29 @@ public class PhysicsEngine {
 		@Override
 		public void run() {
 
-			long time = System.nanoTime();
-			long deltaTime = time - lastTime;
-			lastTime = time;
+			long timeNanoSeconds = System.nanoTime();
+			long deltaTimeNanoSeconds = timeNanoSeconds - lastTimeNanoSeconds;
+			lastTimeNanoSeconds = timeNanoSeconds;
 			
-			updateWorld(deltaTime);
+			updateWorld(deltaTimeNanoSeconds);
 
-			if (WORLD_IS_RUNNING) {
-				Platform.runLater(new UpdateWorldRunnable());
-			}
+			Platform.runLater(new UpdateWorldRunnable());
 		}
 	}
 
+	private final PhysicsEngine engineReference;
 
 	private final Map <EntityType, List<Entity>> entities;
 	private final List<GameSystem> systems;
+	private final RenderSystem renderSystem;
 	
 	private Stage mainStage;
 
 	private CenterBase centerBase;
 	private RightBase  rightBase;
 
-	private long    lastTime;
+	private double  deltaTimeSeconds;
+	private long    lastTimeNanoSeconds;
 	private boolean WORLD_IS_RUNNING = false;
 
 	private final long WORLD_WIDTH  = 1280;
@@ -178,9 +177,17 @@ public class PhysicsEngine {
 		mainStage = primaryStage;
 		entities  = new HashMap<EntityType, List<Entity>>();
 		systems   = new ArrayList<GameSystem>();
+		
+		renderSystem    = new RenderSystem();
+		engineReference = this;
+		
+		lastTimeNanoSeconds = System.nanoTime();
+		deltaTimeSeconds    = 1; // used to prevent divides by zero
 
 		init();
 		mainStage.show();
+
+		Platform.runLater(new UpdateWorldRunnable());
 	}
 
 	private void init() {
@@ -218,14 +225,27 @@ public class PhysicsEngine {
 
 		systems.add(new CollisionSystem(WORLD_WIDTH, WORLD_HEIGHT));
 		systems.add(new VelocitySystem());
-		systems.add(new GravitySystem(50)); // 10 pixels per second
-		systems.add(new RenderSystem());
+		systems.add(new GravitySystem(150)); // 10 pixels per second
 	}
 
 	private void updateWorld(long deltaTimeRaw) {
-		double deltaTimeSeconds = (double) (deltaTimeRaw / ((double) 1e9));
-		for (GameSystem system : systems) {
-			system.update(entities, deltaTimeSeconds);
+		
+		deltaTimeSeconds = (double) (deltaTimeRaw / ((double) 1e9));
+		
+		if (WORLD_IS_RUNNING) {
+			for (GameSystem system : systems) {
+				system.update(entities, deltaTimeSeconds);
+			}
 		}
+
+		renderSystem.update(entities, deltaTimeSeconds);
+	}
+
+	public double deltaTime() {
+		return deltaTimeSeconds;
+	}
+
+	public boolean worldIsRunning() {
+		return WORLD_IS_RUNNING;
 	}
 }
