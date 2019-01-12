@@ -11,17 +11,22 @@ public class CollisionSystem extends GameSystem {
 		this.WORLD_HEIGHT = WORLD_HEIGHT;
 	}
 
-	private void update(Entity entity) {
+	protected void update(Entity entity, double deltaTime) {
 		
-		Vector2D position = entity.components.get(ComponentType.POSITION);
-		
-		position.x = position.x > WORLD_WIDTH 
-			? WORLD_WIDTH / 2 
-			: position.x;
-		position.y = position.y > WORLD_WIDTH
-			? WORLD_HEIGHT / 2
-			: position.y;
+		Vector2D position = (Vector2D) entity.components.get(ComponentType.POSITION);
+		Vector2D velocity = (Vector2D) entity.components.get(ComponentType.VELOCITY);
+
+		if (position.x > WORLD_WIDTH) {
+			velocity.x *= -1;
+			position.x = WORLD_WIDTH;
+		}	
+
+		if (position.y > WORLD_HEIGHT) {
+			velocity.y *= -1;
+			position.y = WORLD_HEIGHT;
+		}
 
 		entity.components.put(ComponentType.POSITION, position);
+		entity.components.put(ComponentType.VELOCITY, velocity);
 	}
 }

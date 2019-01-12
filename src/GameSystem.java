@@ -9,12 +9,12 @@ public abstract class GameSystem {
 		this.typeToTarget = typeToTarget;
 	}
 
-	public void update(Map<EntityType, List<Entity>> entities) {
+	public void update(Map<EntityType, List<Entity>> entities, double deltaTime) {
 		List<Entity> entitiesToUpdate = entities.get(typeToTarget);
 		for (Entity entity : entitiesToUpdate) {
-			update(entity);
+			update(entity, deltaTime);
 		}
 	}
 
-	private void update(Entity entity);
+	protected abstract void update(Entity entity, double deltaTime);
 }

@@ -5,11 +5,14 @@ public class VelocitySystem extends GameSystem {
 		super(EntityType.MOVABLE);
 	}
 
-	private void update(Entity entity) {
+	protected void update(Entity entity, double deltaTime) {
 		
-		Vector2D oldPosition = entity.components.get(ComponentType.POSITION);
-		Vector2D velocity    = entity.components.get(ComponentType.VELOCITY);
-		Vector2D newPosition = Vector2D.add(oldPosition, velocity);
+		Vector2D oldPosition   = (Vector2D) entity.components.get(ComponentType.POSITION);
+		Vector2D velocity      = (Vector2D) entity.components.get(ComponentType.VELOCITY);
+		
+		Vector2D deltaPosition = Vector2D.scalarMultiply(deltaTime, velocity);
+		Vector2D newPosition   = Vector2D.add(oldPosition, deltaPosition);
+
 		entity.components.put(ComponentType.POSITION, newPosition);
 	}
 }

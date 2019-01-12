@@ -1,9 +1,12 @@
+import javafx.application.Platform;
+
 import javafx.stage.Stage;
 
 import javafx.event.EventHandler;
 import javafx.event.ActionEvent;
 
 import javafx.scene.Scene;
+import javafx.scene.Node;
 
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
@@ -53,10 +56,15 @@ public class PhysicsEngine {
 		private VBox root;
 
 		private Button spawnButton;
+		private Button startButton;
+		private Button stopButton;
 
 		public RightBase() {
 			
 			initSpawnButton();
+			initStartButton();
+			initStopButton();
+
 			combineAndBuild();
 		}
 
@@ -64,7 +72,10 @@ public class PhysicsEngine {
 
 			root = new VBox(6);
 			root.setPadding(new Insets(6));
+
 			root.getChildren().add(spawnButton);
+			root.getChildren().add(startButton);
+			root.getChildren().add(stopButton);
 		}
 
 		private void initSpawnButton() {
@@ -74,34 +85,106 @@ public class PhysicsEngine {
 
 				@Override
 				public void handle(ActionEvent event) {
-					System.out.println("clicked");
+					
+					PointEntity entity = new PointEntity(
+						(long)(Math.random() * WORLD_WIDTH), 
+						(long)(Math.random() * WORLD_HEIGHT)
+					);
+					
+					centerBase.root
+						.getChildren()
+						.addAll((Node)entity.components.get(ComponentType.VIEW));
+
+					for (EntityType entityType : entity.entityTypes) {
+						List<Entity> temp = entities.get(entityType);
+						temp.add(entity);
+					}
 				}
 			});
 		}
+
+		private void initStartButton() {
+
+			startButton = new Button("Start Engine");
+			startButton.setOnAction(new EventHandler<ActionEvent>() {
+
+				@Override
+				public void handle(ActionEvent event) {
+
+					startButton.setDisable(true);
+					stopButton.setDisable(false);
+
+					WORLD_IS_RUNNING = true;
+					lastTime = System.nanoTime();
+
+					Platform.runLater(new UpdateWorldRunnable());
+				}
+			});
+		}
+
+		private void initStopButton() {
+
+			stopButton = new Button("Stop Engine");
+			stopButton.setOnAction(new EventHandler<ActionEvent>() {
+
+				@Override
+				public void handle(ActionEvent event) {
+					
+					startButton.setDisable(false);
+					stopButton.setDisable(true);
+
+					WORLD_IS_RUNNING = false;
+				}
+			});
+
+			stopButton.setDisable(true);
+		}
 	}
 
+	private class UpdateWorldRunnable implements Runnable {
+		
+		@Override
+		public void run() {
+
+			long time = System.nanoTime();
+			long deltaTime = time - lastTime;
+			lastTime = time;
+			
+			updateWorld(deltaTime);
+
+			if (WORLD_IS_RUNNING) {
+				Platform.runLater(new UpdateWorldRunnable());
+			}
+		}
+	}
+
+
+	private final Map <EntityType, List<Entity>> entities;
+	private final List<GameSystem> systems;
+	
 	private Stage mainStage;
 
 	private CenterBase centerBase;
 	private RightBase  rightBase;
 
-	private Map<EntityType, List<Entity>> entities;
-	private List<GameSystem> systems;
+	private long    lastTime;
+	private boolean WORLD_IS_RUNNING = false;
 
-	private final long WORLD_WIDTH = 1280;
+	private final long WORLD_WIDTH  = 1280;
 	private final long WORLD_HEIGHT = 720;
 
 	public PhysicsEngine(Stage primaryStage) {
 		
 		mainStage = primaryStage;
+		entities  = new HashMap<EntityType, List<Entity>>();
+		systems   = new ArrayList<GameSystem>();
+
 		init();
 		mainStage.show();
 	}
 
 	private void init() {
 		
-		entities = new HashMap<EntityType, List<Entity>>();
-
 		for (EntityType entityType : EntityType.values()) {
 			entities.put(entityType, new ArrayList<Entity>());
 		}
@@ -133,10 +216,16 @@ public class PhysicsEngine {
 
 	private void initSystems() {
 
-		systems = new ArrayList<GameSystem>();
-
 		systems.add(new CollisionSystem(WORLD_WIDTH, WORLD_HEIGHT));
 		systems.add(new VelocitySystem());
-		systems.add(new GravitySystem(1));
+		systems.add(new GravitySystem(50)); // 10 pixels per second
+		systems.add(new RenderSystem());
+	}
+
+	private void updateWorld(long deltaTimeRaw) {
+		double deltaTimeSeconds = (double) (deltaTimeRaw / ((double) 1e9));
+		for (GameSystem system : systems) {
+			system.update(entities, deltaTimeSeconds);
+		}
 	}
 }
